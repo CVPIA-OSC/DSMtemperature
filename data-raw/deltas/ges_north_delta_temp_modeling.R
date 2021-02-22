@@ -143,3 +143,6 @@ diff_from_EMM <- GES_north_delta_water_temp_c %>%
   geom_line(aes(x = date, y = `GES North Delta`), color = "Blue") +
   geom_line(aes(x = date, y = `North Delta`), color = "Orange")
 diff_from_EMM
+
+write_rds(GES_north_delta_water_temp_c, 'data-raw/deltas/ges_north_delta_water_temp_c.rds')
+
