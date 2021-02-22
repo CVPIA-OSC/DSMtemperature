@@ -139,10 +139,19 @@ percent_temp_above_tewnty <- nrow(GES_north_delta_water_temp_c %>% filter(`GES N
 
 diff_from_EMM <- GES_north_delta_water_temp_c %>%
   left_join(north_delta_water_temp_c) %>%
-  ggplot() +
-  geom_line(aes(x = date, y = `GES North Delta`), color = "Blue") +
-  geom_line(aes(x = date, y = `North Delta`), color = "Orange")
+  rename("GES Temp Measures" = `GES North Delta`, "EMM Temp Measures" = `North Delta`) %>%
+  gather(spill, temp, -date) %>%
+  ggplot(aes(x = date, y = temp, colour = spill)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 20, linetype = 2, size = .2) +
+  ggtitle("Emanton and Ges gauge temperature measures from 1980 - 2020") +
+  theme_minimal()
 diff_from_EMM
 
 write_rds(GES_north_delta_water_temp_c, 'data-raw/deltas/ges_north_delta_water_temp_c.rds')
 
+emm_and_ges_temps <- GES_north_delta_water_temp_c %>%
+  left_join(north_delta_water_temp_c) %>%
+  rename("GES Temp Measures" = `GES North Delta`, "EMM Temp Measures" = `North Delta`) %>% glimpse()
+
+write_csv(emm_and_ges_temps, "data-raw/deltas/emm_and_ges_temps.csv")
