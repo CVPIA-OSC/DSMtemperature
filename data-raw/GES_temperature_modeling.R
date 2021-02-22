@@ -56,19 +56,15 @@ antioch1$data %>%
 
 
 # Air temp values for training model
-antioch4 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-                        startdate = '1999-01-01', enddate = '2008-12-31', token = token, limit = 130)
-antioch5 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-                        startdate = '2009-01-01', enddate = '2017-12-31', token = token, limit = 130)
+antioch_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+                        startdate = '2009-12-03', enddate = '2017-12-31', token = token, limit = 130)
 
-antioch4$data %>%
-  bind_rows(antioch5$data) %>%
+antioch_training$data %>%
   mutate(date = ymd_hms(date)) %>%
   ggplot(aes(x = date, y = value)) +
   geom_col()
 
-air_temp_training <- antioch4$data %>%
-  bind_rows(antioch5$data) %>%
+air_temp_training <- antioch_training$data %>%
   mutate(date = as_date(ymd_hms(date))) %>%
   select(date, air_temp_c = value)
 
@@ -132,10 +128,14 @@ GES_north_delta_water_temp_c <- tibble(
 
 GES_north_delta_water_temp_c %>%
   ggplot(aes(x = date)) +
-  geom_col(aes(y = `North Delta`)) +
+  geom_col(aes(y = `GES North Delta`)) +
   geom_hline(yintercept = 18, size = .2) +
   geom_hline(yintercept = 20, size = .2) +
   theme_minimal()
+
+percent_temp_above_tewnty <- nrow(GES_north_delta_water_temp_c %>% filter(`GES North Delta` > 20)) /
+  (nrow(GES_north_delta_water_temp_c))
+
 
 diff_from_EMM <- GES_north_delta_water_temp_c %>%
   left_join(north_delta_water_temp_c) %>%
