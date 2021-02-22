@@ -71,7 +71,8 @@ dimnames(stream_temperature) <- list(cvpia_watershed, month.abb, 1979:1999)
 usethis::use_data(stream_temperature, overwrite = TRUE)
 
 # delta temps ----------------------------------
-dn <- read_rds('data-raw/deltas/north_delta_water_temp_c.rds')
+# replace dn with new values from the GES gauge
+dn <- read_rds('data-raw/deltas/ges_north_delta_water_temp_c.rds')
 ds <- read_rds('data-raw/deltas/south_delta_water_temp_c.rds')
 
 delta_temperature <- array(NA, dim = c(12, 22, 2))
@@ -79,7 +80,7 @@ delta_temperature <- array(NA, dim = c(12, 22, 2))
 delta_temperature[ , , 1] <- dn %>%
   mutate(year = year(date), month = month(date)) %>%
   select(-date) %>%
-  spread(year, `North Delta`) %>%
+  spread(year, `GES North Delta`) %>%
   select(-month) %>%
   as.matrix()
 
