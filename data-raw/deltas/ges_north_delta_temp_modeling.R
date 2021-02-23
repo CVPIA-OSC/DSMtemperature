@@ -40,33 +40,58 @@ token = Sys.getenv("token")
 
 # Antioch looks like it is still the closest sensor to GES (But is kinda far away...)
 # load in air temp values from noaa for use with temperature model to predict water temperature
-antioch1 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-                        startdate = '1979-01-01', enddate = '1979-12-31', token = token, limit = 12)
-antioch2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-                        startdate = '1980-01-01', enddate = '1989-12-31', token = token, limit = 130)
-antioch3 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-                        startdate = '1990-01-01', enddate = '1999-12-31', token = token, limit = 130)
 
-antioch1$data %>%
-  bind_rows(antioch2$data) %>%
-  bind_rows(antioch3$data) %>%
-  mutate(date = as_date(ymd_hms(date))) %>%
-  ggplot(aes(x = date, y = value)) +
-  geom_col()
+# antioch1 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+#                         startdate = '1979-01-01', enddate = '1979-12-31', token = token, limit = 12)
+# antioch2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+#                         startdate = '1980-01-01', enddate = '1989-12-31', token = token, limit = 130)
+# antioch3 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+#                         startdate = '1990-01-01', enddate = '1999-12-31', token = token, limit = 130)
+#
+#
+#
+# antioch1$data %>%
+#   bind_rows(antioch2$data) %>%
+#   bind_rows(antioch3$data) %>%
+#   mutate(date = as_date(ymd_hms(date))) %>%
+#   ggplot(aes(x = date, y = value)) +
+#   geom_col()
 
 
 # Air temp values for training model
-antioch_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-                        startdate = '2009-12-03', enddate = '2017-12-31', token = token, limit = 130)
+# antioch_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+#                         startdate = '2009-12-03', enddate = '2017-12-31', token = token, limit = 130)
 
-antioch_training$data %>%
-  mutate(date = ymd_hms(date)) %>%
+
+lodi1 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+                     startdate = '1979-01-01', enddate = '1979-12-31', token = token, limit = 130)
+lodi2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+                     startdate = '1980-01-01', enddate = '1989-12-31', token = token, limit = 130)
+lodi3 <-rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+                    startdate = '1990-01-01', enddate = '1999-12-31', token = token, limit = 130)
+lodi_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+                             startdate = '2009-12-03', enddate = '2017-12-31', token = token, limit = 130)
+
+lodi1$data %>%
+  bind_rows(lodi2$data) %>%
+  bind_rows(lodi3$data) %>%
+  mutate(date = as_date(ymd_hms(date))) %>%
   ggplot(aes(x = date, y = value)) +
   geom_col()
 
-air_temp_training <- antioch_training$data %>%
+
+# antioch_training$data %>%
+#   mutate(date = ymd_hms(date)) %>%
+#   ggplot(aes(x = date, y = value)) +
+#   geom_col()
+
+air_temp_training <- lodi_training$data %>%
   mutate(date = as_date(ymd_hms(date))) %>%
   select(date, air_temp_c = value)
+
+# air_temp_training <- antioch_training$data %>%
+#   mutate(date = as_date(ymd_hms(date))) %>%
+#   select(date, air_temp_c = value)
 
 water_temp_training <- GES_north_delta %>%
   group_by(year = year(date), month = month(date)) %>%
@@ -84,11 +109,52 @@ water_temp_training %>%
   geom_point() +
   geom_smooth(method = 'lm', se = FALSE)
 
+# Create Lodi GES Training
+GES_lodi_training <- water_temp_training %>%
+  left_join(lodi_temp_training) %>%
+  filter(!is.na(air_temp_c))
+
+# model for lodi
+GES_lodi_temp_model <- lm(water_temp_c ~ air_temp_c, GES_lodi_training)
+summary(GES_lodi_temp_model)
+
+# Lodi temp data
+GES_lodi_air_temp <- lodi1$data %>%
+  bind_rows(lodi2$data) %>%
+  bind_rows(lodi3$data) %>%
+  mutate(date = as_date(ymd_hms(date))) %>%
+  select(date, air_temp_c = value) %>%
+  bind_rows(
+    tibble(date = seq.Date(ymd('1979-01-01'), ymd('2000-12-01'), by = 'month'),
+           air_temp_c = 0)
+  ) %>%
+  group_by(date) %>%
+  summarise(air_temp_c = max(air_temp_c)) %>%
+  ungroup() %>%
+  mutate(air_temp_c = ifelse(air_temp_c == 0, NA, air_temp_c))
+
+# Lodi predictions
+GES_ts_lodi_air_temp <- ts(GES_lodi_air_temp$air_temp_c, start = c(1979, 1), end = c(2000, 12), frequency = 12)
+GES_ts_lodi_air_temp
+
+na.interp(GES_ts_lodi_air_temp) %>% autoplot(series = 'Interpolated') +
+  forecast::autolayer(GES_ts_lodi_air_temp, series = 'Original')
+
+GES_lodi_north_delta_air_temp_c <- tibble(
+  date = seq.Date(ymd('1979-01-01'), ymd('2000-12-01'), by = 'month'),
+  air_temp_c = as.numeric(na.interp(GES_ts_lodi_air_temp)))
+# use air temp (with impute values) to predict water temp---------
+GES_lodi_north_delta_air_pred <- predict(GES_lodi_temp_model, GES_lodi_north_delta_air_temp_c)
+
+GES_lodi_north_delta_water_temp_c <- tibble(
+  date = seq.Date(ymd('1979-01-01'), ymd('2000-12-01'), by = 'month'),
+  `GES Lodi North Delta` = GES_lodi_north_delta_air_pred) %>% glimpse()
+
+
 # Create GES Training
 GES_north_delta_training <- water_temp_training %>%
   left_join(air_temp_training) %>%
   filter(!is.na(air_temp_c))
-
 
 # Model water temp as function of air temp
 GES_north_delta_temp_model <- lm(water_temp_c ~ air_temp_c, GES_north_delta_training)
