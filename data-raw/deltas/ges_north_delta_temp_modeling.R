@@ -75,14 +75,14 @@ lodi_training$data %>%
   ggplot(aes(x = date, y = value)) +
   geom_col()
 
-air_temp_training <- lodi_training$data %>%
-  bind_rows(lodi_training2$data) %>%
-  mutate(date = as_date(ymd_hms(date))) %>%
-  select(date, air_temp_c = value)
-
-# air_temp_training <- antioch_training$data %>%
+# air_temp_training <- lodi_training$data %>%
+#   bind_rows(lodi_training2$data) %>%
 #   mutate(date = as_date(ymd_hms(date))) %>%
 #   select(date, air_temp_c = value)
+
+air_temp_training <- antioch_training$data %>%
+  mutate(date = as_date(ymd_hms(date))) %>%
+  select(date, air_temp_c = value)
 
 water_temp_training <- GES_north_delta %>%
   group_by(year = year(date), month = month(date)) %>%
@@ -105,24 +105,25 @@ GES_north_delta_training <- water_temp_training %>%
   left_join(air_temp_training) %>%
   filter(!is.na(air_temp_c))
 
+
 # model for lodi
 GES_north_delta_temp_model <- lm(water_temp_c ~ air_temp_c, GES_north_delta_training)
 summary(GES_north_delta_temp_model)
 
 # Lodi temp data
-GES_north_delta_air_temp <- lodi1$data %>%
-  bind_rows(lodi2$data) %>%
-  bind_rows(lodi3$data) %>%
-  mutate(date = as_date(ymd_hms(date))) %>%
-  select(date, air_temp_c = value) %>%
-  bind_rows(
-    tibble(date = seq.Date(ymd('1979-01-01'), ymd('2000-12-01'), by = 'month'),
-           air_temp_c = 0)
-  ) %>%
-  group_by(date) %>%
-  summarise(air_temp_c = max(air_temp_c)) %>%
-  ungroup() %>%
-  mutate(air_temp_c = ifelse(air_temp_c == 0, NA, air_temp_c))
+# GES_north_delta_air_temp <- lodi1$data %>%
+#   bind_rows(lodi2$data) %>%
+#   bind_rows(lodi3$data) %>%
+#   mutate(date = as_date(ymd_hms(date))) %>%
+#   select(date, air_temp_c = value) %>%
+#   bind_rows(
+#     tibble(date = seq.Date(ymd('1979-01-01'), ymd('2000-12-01'), by = 'month'),
+#            air_temp_c = 0)
+#   ) %>%
+#   group_by(date) %>%
+#   summarise(air_temp_c = max(air_temp_c)) %>%
+#   ungroup() %>%
+#   mutate(air_temp_c = ifelse(air_temp_c == 0, NA, air_temp_c))
 
 # antioch temp data
 # GES_north_delta_air_temp <- antioch1$data %>%
