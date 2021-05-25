@@ -124,4 +124,4 @@ GES_north_delta_water_temp_c %>%
   theme_minimal()
 
 # Write into rds
-write_rds(GES_north_delta_water_temp_c, 'data-raw/deltas/ges_north_delta_water_temp_c.rds')
+# write_rds(GES_north_delta_water_temp_c, 'data-raw/deltas/ges_north_delta_water_temp_c.rds') # Do not include rds for now because we are not using (write if we decide to use in the future)
