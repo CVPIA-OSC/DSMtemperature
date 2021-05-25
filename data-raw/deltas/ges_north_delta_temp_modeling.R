@@ -39,28 +39,30 @@ ggplot(GES_north_delta, aes(x = date, y = mean_temp_c)) +
 token = Sys.getenv("token")
 
 # Replaced antioch air temp with lodi
-# antioch1 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-#                         startdate = '1979-01-01', enddate = '1979-12-31', token = token, limit = 12)
-# antioch2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-#                         startdate = '1980-01-01', enddate = '1989-12-31', token = token, limit = 130)
-# antioch3 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-#                         startdate = '1990-01-01', enddate = '1999-12-31', token = token, limit = 130)
-# antioch_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
-#                         startdate = '2009-12-03', enddate = '2017-12-31', token = token, limit = 130)
+antioch1 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+                        startdate = '1979-01-01', enddate = '1979-12-31', token = token, limit = 12)
+antioch2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+                        startdate = '1980-01-01', enddate = '1989-12-31', token = token, limit = 130)
+antioch3 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+                        startdate = '1990-01-01', enddate = '1999-12-31', token = token, limit = 130)
+antioch_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+                        startdate = '2009-12-03', enddate = '2017-12-31', token = token, limit = 130)
+antioch4 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00040232', datatypeid = 'TAVG',
+                        startdate = '2000-01-01', enddate = '2000-12-31', token = token, limit = 130)
 
 # load in air temp values from noaa for use with temperature model to predict water temperature
 # Air temp values for training model
-lodi1 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
-                     startdate = '1979-01-01', enddate = '1979-12-31', token = token, limit = 130)
-lodi2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
-                     startdate = '1980-01-01', enddate = '1989-12-31', token = token, limit = 130)
-lodi3 <-rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
-                    startdate = '1990-01-01', enddate = '1999-12-31', token = token, limit = 130)
-
-lodi_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
-                             startdate = '2009-01-01', enddate = '2017-12-31', token = token, limit = 130)
-lodi_training2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
-                              startdate = '2018-01-01', enddate = '2021-02-23', token = token, limit = 130)
+# lodi1 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+#                      startdate = '1979-01-01', enddate = '1979-12-31', token = token, limit = 130)
+# lodi2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+#                      startdate = '1980-01-01', enddate = '1989-12-31', token = token, limit = 130)
+# lodi3 <-rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+#                     startdate = '1990-01-01', enddate = '1999-12-31', token = token, limit = 130)
+#
+# lodi_training <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+#                              startdate = '2009-01-01', enddate = '2017-12-31', token = token, limit = 130)
+# lodi_training2 <- rnoaa::ncdc(datasetid = 'GSOM', stationid = 'GHCND:USC00045032', datatypeid = 'TAVG',
+#                               startdate = '2018-01-01', enddate = '2021-02-23', token = token, limit = 130)
 
 lodi1$data %>%
   bind_rows(lodi2$data) %>%
@@ -111,24 +113,9 @@ GES_north_delta_temp_model <- lm(water_temp_c ~ air_temp_c, GES_north_delta_trai
 summary(GES_north_delta_temp_model)
 
 # Lodi temp data
-GES_north_delta_air_temp <- lodi1$data %>%
-  bind_rows(lodi2$data) %>%
-  bind_rows(lodi3$data) %>%
-  mutate(date = as_date(ymd_hms(date))) %>%
-  select(date, air_temp_c = value) %>%
-  bind_rows(
-    tibble(date = seq.Date(ymd('1979-01-01'), ymd('2000-12-01'), by = 'month'),
-           air_temp_c = 0)
-  ) %>%
-  group_by(date) %>%
-  summarise(air_temp_c = max(air_temp_c)) %>%
-  ungroup() %>%
-  mutate(air_temp_c = ifelse(air_temp_c == 0, NA, air_temp_c))
-
-# antioch temp data
-# GES_north_delta_air_temp <- antioch1$data %>%
-#   bind_rows(antioch2$data) %>%
-#   bind_rows(antioch3$data) %>%
+# GES_north_delta_air_temp <- lodi1$data %>%
+#   bind_rows(lodi2$data) %>%
+#   bind_rows(lodi3$data) %>%
 #   mutate(date = as_date(ymd_hms(date))) %>%
 #   select(date, air_temp_c = value) %>%
 #   bind_rows(
@@ -139,6 +126,22 @@ GES_north_delta_air_temp <- lodi1$data %>%
 #   summarise(air_temp_c = max(air_temp_c)) %>%
 #   ungroup() %>%
 #   mutate(air_temp_c = ifelse(air_temp_c == 0, NA, air_temp_c))
+
+# antioch temp data
+GES_north_delta_air_temp <- antioch1$data %>%
+  bind_rows(antioch2$data) %>%
+  bind_rows(antioch3$data) %>%
+  bind_rows(antioch4$data) %>%
+  mutate(date = as_date(ymd_hms(date))) %>%
+  select(date, air_temp_c = value) %>%
+  bind_rows(
+    tibble(date = seq.Date(ymd('1979-01-01'), ymd('2000-12-01'), by = 'month'),
+           air_temp_c = 0)
+  ) %>%
+  group_by(date) %>%
+  summarise(air_temp_c = max(air_temp_c)) %>%
+  ungroup() %>%
+  mutate(air_temp_c = ifelse(air_temp_c == 0, NA, air_temp_c))
 
 # need to imupte values for missing air temperature values between 1980-1999 for predicting water temp----------
 GES_ts_north_delta_at <- ts(GES_north_delta_air_temp$air_temp_c, start = c(1979, 1), end = c(2000, 12), frequency = 12)

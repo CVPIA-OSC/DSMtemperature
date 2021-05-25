@@ -71,7 +71,6 @@ dimnames(stream_temperature) <- list(cvpia_watershed, month.abb, 1979:1999)
 usethis::use_data(stream_temperature, overwrite = TRUE)
 
 # delta temps ----------------------------------
-# TODO: replace dn with new values from the GES gauge
 dn <- read_rds('data-raw/deltas/north_delta_water_temp_c.rds')
 ds <- read_rds('data-raw/deltas/south_delta_water_temp_c.rds')
 
