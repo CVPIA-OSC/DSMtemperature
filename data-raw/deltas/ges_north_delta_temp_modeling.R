@@ -125,23 +125,3 @@ GES_north_delta_water_temp_c %>%
 
 # Write into rds
 write_rds(GES_north_delta_water_temp_c, 'data-raw/deltas/ges_north_delta_water_temp_c.rds')
-
-#look at days above 20 degrees
-percent_temp_above_tewnty <- nrow(GES_north_delta_water_temp_c %>% filter(`GES North Delta` > 20)) /
-  (nrow(GES_north_delta_water_temp_c))
-
-# Compare EMM to GES
-diff_from_EMM <- GES_north_delta_water_temp_c %>%
-  left_join(north_delta_water_temp_c) %>%
-  rename("GES Temp Measures" = `GES North Delta`, "EMM Temp Measures" = `North Delta`) %>%
-  gather(spill, temp, -date) %>%
-  ggplot(aes(x = date, y = temp, colour = spill)) +
-  geom_line(size = 1) +
-  geom_hline(yintercept = 20, linetype = 2, size = .2) +
-  ggtitle("Emanton and Ges gauge temperature measures from 1980 - 2020") +
-  theme_minimal()
-diff_from_EMM
-
-emm_and_ges_temps <- GES_north_delta_water_temp_c %>%
-  left_join(north_delta_water_temp_c) %>%
-  rename("GES Temp Measures" = `GES North Delta`, "EMM Temp Measures" = `North Delta`) %>% glimpse()
