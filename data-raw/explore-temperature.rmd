@@ -1,0 +1,80 @@
+---
+title: "Explore Temperature"
+author: "Erin Cain"
+date: "8/6/2021"
+output: 
+  html_document:
+    toc_depth: 2
+    theme: flatly
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.width=15, fig.height=8)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+```
+
+## Stream Temperature
+```{r}
+temp <- DSMtemperature::stream_temperature
+
+temperature <- expand_grid(
+  watershed = factor(DSMscenario::watershed_labels, 
+                     levels = DSMscenario::watershed_labels),
+  month = 1:12,
+  year = 1980:2000) %>%
+  arrange(year, month, watershed) %>%
+  mutate(
+    temp = as.vector(temp))
+```
+
+```{r}
+temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp) %>% 
+  filter(!(watershed %in% c('Sutter Bypass', 'Yolo Bypass'))) %>% 
+  ggplot(aes(date, temp)) +
+  geom_line(color = 'blue') +
+  facet_wrap(~watershed, scales = 'free_y')
+
+temp_summary <- temperature %>% 
+  group_by(watershed) %>%
+  summarise(min_temp = round(min(temp), 2),
+            max_temp = round(max(temp), 2),
+            mean_temp = round(mean(temp), 2))
+
+DT::datatable(temp_summary)
+```
+
+
+## Detla Temperatures 
+```{r}
+delta_temp <- DSMtemperature::delta_temperature
+
+delta_temperature <- expand_grid(
+  watershed = c("North Delta", "South Delta"),
+  month = 1:12,
+  year = 1980:2000) %>%
+  arrange(watershed, year, month) %>%
+  mutate(
+    temp = as.vector(delta_temp))
+```
+
+```{r}
+delta_temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp) %>% 
+  filter(!(watershed %in% c('Sutter Bypass', 'Yolo Bypass'))) %>% 
+  ggplot(aes(date, temp)) +
+  geom_line(color = 'blue') +
+  facet_wrap(~watershed, scales = 'free_y')
+
+temp_summary <- delta_temperature %>% 
+  group_by(watershed) %>%
+  summarise(min_temp = round(min(temp), 2),
+            max_temp = round(max(temp), 2),
+            mean_temp = round(mean(temp), 2))
+
+DT::datatable(temp_summary)
+```
