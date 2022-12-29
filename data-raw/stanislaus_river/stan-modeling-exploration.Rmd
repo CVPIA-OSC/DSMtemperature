@@ -1,0 +1,71 @@
+---
+title: "Stanislaus Temperature Update"
+output: 
+  html_document:
+    toc_depth: 2
+    theme: flatly
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.width=18, fig.height=10, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+```
+
+## Stream Temperature Degrees Celcius 
+```{r}
+temp_2008 <- DSMtemperature::stream_temperature$biop_2008_2009
+temp_biop <- DSMtemperature::stream_temperature$biop_itp_2018_2019
+at_dam_location <- readRDS("stan_temp_at_dam.rds") |> 
+  mutate(month = month(date), year = year(date)) |> 
+  filter(year >= 1980) |> 
+  mutate(calsim = "2019 CalSim II BiOp - Near Dam Temperature (GDC)",
+         temp = monthly_mean_temp_c) |> 
+  select(watershed, month, year, calsim, temp) |> 
+  glimpse()
+  
+
+
+temperature <- expand_grid(
+  watershed = factor(DSMscenario::watershed_labels, 
+                     levels = DSMscenario::watershed_labels),
+  month = 1:12,
+  year = 1980:2000) %>%
+  arrange(year, month, watershed) %>%
+  mutate(
+    "2008 CalSim II - Hec5Q Modeling" = as.vector(temp_2008),
+    "2019 CalSim II BiOp - Stan Temps at Ripon" = as.vector(temp_biop)) |> 
+  pivot_longer(cols = `2008 CalSim II - Hec5Q Modeling`:`2019 CalSim II BiOp - Stan Temps at Ripon`, 
+               names_to = "calsim", 
+               values_to = "temp") |> 
+  filter(watershed == "Stanislaus River") |> 
+  bind_rows(at_dam_location)
+  
+```
+
+```{r}
+temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp, calsim) %>% 
+  filter(!(watershed %in% c('Sutter Bypass', 'Yolo Bypass'))) %>% 
+  ggplot(aes(date, temp, color = calsim)) +
+  geom_line() +
+  facet_wrap(~watershed) + 
+  theme_minimal() + 
+  theme(legend.position = "bottom",
+        text = element_text(size = 25))
+
+temp_summary <- temperature %>% 
+  group_by(watershed, calsim) %>%
+  summarise(min_temp = round(min(temp), 2),
+            max_temp = round(max(temp), 2),
+            mean_temp = round(mean(temp), 2),
+            range = round(max_temp - min_temp, 2))
+DT::datatable(temp_summary)
+```
+
+
+
+

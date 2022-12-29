@@ -1,0 +1,138 @@
+---
+title: "Explore Temperature Updates"
+author: "Erin Cain"
+date: "8/6/2021"
+output: 
+  html_document:
+    toc_depth: 2
+    theme: flatly
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.width=18, fig.height=10, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+```
+
+## Stream Temperature Degrees Celcius 
+```{r}
+temp_2008 <- DSMtemperature::stream_temperature$biop_2008_2009
+temp_biop <- DSMtemperature::stream_temperature$biop_itp_2018_2019
+
+
+temperature <- expand_grid(
+  watershed = factor(DSMscenario::watershed_labels, 
+                     levels = DSMscenario::watershed_labels),
+  month = 1:12,
+  year = 1980:2000) %>%
+  arrange(year, month, watershed) %>%
+  mutate(
+    "2008 CalSim II" = as.vector(temp_2008),
+    "2019 CalSim II BiOp" = as.vector(temp_biop)) |> 
+  pivot_longer(cols = `2008 CalSim II`:`2019 CalSim II BiOp`, 
+               names_to = "calsim", 
+               values_to = "temp")
+```
+
+```{r}
+temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp, calsim) %>% 
+  filter(!(watershed %in% c('Sutter Bypass', 'Yolo Bypass'))) %>% 
+  ggplot(aes(date, temp, color = calsim)) +
+  geom_line() +
+  facet_wrap(~watershed) + 
+  theme_minimal()
+
+temp_summary <- temperature %>% 
+  group_by(watershed, calsim) %>%
+  summarise(min_temp = round(min(temp), 2),
+            max_temp = round(max(temp), 2),
+            mean_temp = round(mean(temp), 2),
+            range = round(max_temp - min_temp, 2))
+DT::datatable(temp_summary)
+```
+### Zoom in on new modeled temps 
+```{r}
+# Merced 
+temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp, calsim) %>% 
+  filter(watershed == "Merced River") %>% 
+  ggplot(aes(date, temp, color = calsim)) +
+  geom_line() +
+  facet_wrap(~watershed) + 
+  scale_x_date(date_labels = "%d-%Y", date_breaks = "12 months") + 
+  theme_minimal()
+
+# stanislaus 
+temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp, calsim) %>% 
+  filter(watershed == "Stanislaus River") %>% 
+  ggplot(aes(date, temp, color = calsim)) +
+  geom_line() +
+  facet_wrap(~watershed) + 
+  scale_x_date(date_labels = "%d-%Y", date_breaks = "12 months") + 
+  theme_minimal()
+
+# Tuolumne 
+temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp, calsim) %>% 
+  filter(watershed == "Tuolumne River") %>% 
+  ggplot(aes(date, temp, color = calsim)) +
+  geom_line() +
+  facet_wrap(~watershed) + 
+  scale_x_date(date_labels = "%d-%Y", date_breaks = "12 months") + 
+  theme_minimal()
+
+# San Joaquin River
+temperature %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), temp, calsim) %>% 
+  filter(watershed == "San Joaquin River") %>% 
+  ggplot(aes(date, temp, color = calsim)) +
+  geom_line() +
+  facet_wrap(~watershed) + 
+  scale_x_date(date_labels = "%d-%Y", date_breaks = "12 months") + 
+  theme_minimal()
+
+
+```
+
+
+## Degree Days
+```{r}
+degree_days_2008 <- DSMtemperature::degree_days$biop_2008_2009
+degree_days_2019 <- DSMtemperature::degree_days$biop_itp_2018_2019
+
+
+deg_days <- expand_grid(
+  watershed = factor(DSMscenario::watershed_labels, 
+                     levels = DSMscenario::watershed_labels),
+  month = 1:12,
+  year = 1979:2000) %>%
+  arrange(year, month, watershed) %>%
+  mutate(
+    "2008 CalSim II" = as.vector(degree_days_2008),
+    "2019 CalSim II BiOp" = as.vector(degree_days_2019)) |> 
+  pivot_longer(cols = `2008 CalSim II`:`2019 CalSim II BiOp`, 
+               names_to = "calsim", 
+               values_to = "deg_days")
+
+deg_days %>% 
+  transmute(watershed, date = ymd(paste(year, month, 1)), deg_days, calsim) %>% 
+  filter(!(watershed %in% c('Sutter Bypass', 'Yolo Bypass'))) %>% 
+  ggplot(aes(date, deg_days, color = calsim)) +
+  geom_line() +
+  facet_wrap(~watershed) + 
+  theme_minimal()
+
+deg_days_summary <- deg_days %>% 
+  group_by(watershed, calsim) %>%
+  summarise(min_deg_day = round(min(deg_days), 2),
+            max_deg_day = round(max(deg_days), 2),
+            mean_deg_day = round(mean(deg_days), 2),
+            range = round(min_deg_day - max_deg_day, 2))
+DT::datatable(deg_days_summary)
+```
+
