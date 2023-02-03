@@ -19,13 +19,22 @@ library(lubridate)
 ```{r}
 temp_2008 <- DSMtemperature::stream_temperature$biop_2008_2009
 temp_biop <- DSMtemperature::stream_temperature$biop_itp_2018_2019
-at_dam_location <- readRDS("stan_temp_at_dam.rds") |> 
+at_dam_location <- readRDS("data-raw/stanislaus_river/stan_temp_at_dam.rds") |> 
   mutate(month = month(date), year = year(date)) |> 
   filter(year >= 1980) |> 
   mutate(calsim = "2019 CalSim II BiOp - Near Dam Temperature (GDC)",
          temp = monthly_mean_temp_c) |> 
   select(watershed, month, year, calsim, temp) |> 
   glimpse()
+
+mid_river_location <- readRDS("data-raw/stanislaus_river/stan_temp_at_midriver.rds") |> 
+  mutate(month = month(date), year = year(date)) |> 
+  filter(year >= 1980) |> 
+  mutate(calsim = "2019 CalSim II BiOp - Orange Blossom (OBS)",
+         temp = monthly_mean_temp_c) |> 
+  select(watershed, month, year, calsim, temp) |> 
+  glimpse()
+  
   
 
 
@@ -42,7 +51,7 @@ temperature <- expand_grid(
                names_to = "calsim", 
                values_to = "temp") |> 
   filter(watershed == "Stanislaus River") |> 
-  bind_rows(at_dam_location)
+  bind_rows(at_dam_location, mid_river_location)
   
 ```
 

@@ -13,11 +13,16 @@ library(caret)
 # Pull water temperature data --------------------------------------------------
 
 # NMT - new melones temp
-obs <- CDECRetrieve::cdec_query(station = 'OBS', sensor_num = '25', dur_code = 'h',
+nmt <- CDECRetrieve::cdec_query(station = 'NMT', sensor_num = '25', dur_code = 'h',
                                 start_date = '2000-09-16', end_date = '2021-12-06')
 
+tdp <- CDECRetrieve::cdec_query(station = 'TDP', sensor_num = '25', dur_code = 'h',
+                                start_date = '2000-09-16', end_date = '2021-12-06')
 
-obs_water_temp <- obs |> janitor::clean_names() |>
+gdc <- CDECRetrieve::cdec_query(station = 'GDC', sensor_num = '25', dur_code = 'h',
+                                start_date = '2000-09-16', end_date = '2021-12-06')
+
+nmt_water_temp <- nmt |> janitor::clean_names() |>
   select(datetime, temp_f = parameter_value) |>
   filter(between(temp_f, 10, 100)) |>
   group_by(year= year(datetime), month = month(datetime)) |>
@@ -28,14 +33,43 @@ obs_water_temp <- obs |> janitor::clean_names() |>
   select(date, mean_water_temp_c) |>
   filter(!is.na(date)) |> glimpse()
 
-obs_water_temp |>
+tdp_water_temp <- tdp |> janitor::clean_names() |>
+  select(datetime, temp_f = parameter_value) |>
+  filter(between(temp_f, 10, 100)) |>
+  group_by(year= year(datetime), month = month(datetime)) |>
+  summarise(mean_water_temp_f = mean(temp_f, na.rm = TRUE)) |>
+  ungroup() |>
+  mutate(date = ymd(paste(year, month, '01', sep = '-')),
+         mean_water_temp_c = (mean_water_temp_f - 32) * 5 / 9) |>
+  select(date, mean_water_temp_c) |>
+  filter(!is.na(date)) |> glimpse()
+
+gdc_water_temp <- gdc |> janitor::clean_names() |>
+  select(datetime, temp_f = parameter_value) |>
+  filter(between(temp_f, 10, 100)) |>
+  group_by(year= year(datetime), month = month(datetime)) |>
+  summarise(mean_water_temp_f = mean(temp_f, na.rm = TRUE)) |>
+  ungroup() |>
+  mutate(date = ymd(paste(year, month, '01', sep = '-')),
+         mean_water_temp_c = (mean_water_temp_f - 32) * 5 / 9) |>
+  select(date, mean_water_temp_c) |>
+  filter(!is.na(date)) |> glimpse()
+
+nmt_water_temp |>
   ggplot(aes(x = date, y = mean_water_temp_c)) +
   geom_col()
 
+tdp_water_temp |>
+  ggplot(aes(x = date, y = mean_water_temp_c)) +
+  geom_col()
+
+gdc_water_temp |>
+  ggplot(aes(x = date, y = mean_water_temp_c)) +
+  geom_col()
 
 # 3 options for water temp gages that are upstream by dams -
 # SET this to the one we want to look at
-stan_water <- obs_water_temp
+stan_water <- gdc_water_temp
 
 
 # air temperature data near stream ---------------------------------------------
@@ -162,5 +196,5 @@ stan_water_temp_c %>%
   ggplot(aes(x = date)) +
   geom_col(aes(y = monthly_mean_temp_c))
 
-write_rds(stan_water_temp_c, 'data-raw/stanislaus_river/stan_temp_at_midriver.rds')
+write_rds(stan_water_temp_c, 'data-raw/stanislaus_river/stan_temp_at_dam.rds')
 
